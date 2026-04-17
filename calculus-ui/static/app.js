@@ -37,6 +37,23 @@ function scrollToBottom() {
 }
 
 function renderContent(text) {
+  // Phase 0: Extract LaTeX blocks before HTML escaping so delimiters
+  // and backslash commands survive. Restored after all markdown
+  // processing; KaTeX auto-render picks them up in the DOM.
+  var latexBlocks = [];
+  // Display math: \[...\]
+  text = text.replace(/\\\[([\s\S]*?)\\\]/g, function (m) {
+    var idx = latexBlocks.length;
+    latexBlocks.push(m);
+    return "\x00LATEX" + idx + "\x00";
+  });
+  // Inline math: \(...\)
+  text = text.replace(/\\\(([\s\S]*?)\\\)/g, function (m) {
+    var idx = latexBlocks.length;
+    latexBlocks.push(m);
+    return "\x00LATEX" + idx + "\x00";
+  });
+
   // Escape HTML first
   var safe = text
     .replace(/&/g, "&amp;")
@@ -156,6 +173,9 @@ function renderContent(text) {
   });
   result = result.replace(/\x00INLINE(\d+)\x00/g, function (_, idx) {
     return inlineCode[parseInt(idx, 10)];
+  });
+  result = result.replace(/\x00LATEX(\d+)\x00/g, function (_, idx) {
+    return latexBlocks[parseInt(idx, 10)];
   });
 
   return result;
@@ -326,6 +346,18 @@ function createStreamRenderer(assistantEl) {
     // Mark thinking panel as no longer pulsing.
     if (thinkingPanel) {
       thinkingPanel.classList.add("done");
+    }
+    // Render LaTeX math via KaTeX auto-render.
+    if (responseEl && typeof renderMathInElement === "function") {
+      renderMathInElement(responseEl, {
+        delimiters: [
+          { left: "\\[", right: "\\]", display: true },
+          { left: "\\(", right: "\\)", display: false },
+          { left: "$$", right: "$$", display: true },
+          { left: "$", right: "$", display: false },
+        ],
+        throwOnError: false,
+      });
     }
     // If there was no response content (e.g. tool-only turn), make
     // that visible rather than leaving a blank message.

@@ -959,6 +959,15 @@ def _register_mcp_tool(
 
     async def _call_mcp_tool(**kwargs: Any) -> str:
         result = await client.call_tool(tool_name, kwargs)
+        # Extract text content from CallToolResult instead of repr.
+        if hasattr(result, "content") and isinstance(result.content, list):
+            parts = []
+            for item in result.content:
+                if hasattr(item, "text"):
+                    parts.append(item.text)
+                else:
+                    parts.append(str(item))
+            return "\n".join(parts) if parts else str(result)
         return str(result)
 
     meta = ToolMeta(
