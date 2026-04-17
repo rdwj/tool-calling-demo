@@ -307,8 +307,6 @@ footer {
   white-space: pre-wrap;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   line-height: 1.5;
-  max-height: 300px;
-  overflow-y: auto;
 }
 
 /* Tool calls — discrete pills showing the agent's tool execution. */
@@ -347,6 +345,24 @@ footer {
   align-items: center;
   gap: 8px;
   font-weight: 500;
+  cursor: pointer;
+  user-select: none;
+  list-style: none;
+}
+
+.tool-header::marker,
+.tool-header::-webkit-details-marker {
+  display: none;
+}
+
+.tool-header::before {
+  content: "▸";
+  font-size: 11px;
+  transition: transform 0.15s;
+}
+
+.tool-call[open] .tool-header::before {
+  transform: rotate(90deg);
 }
 
 .tool-icon {
@@ -411,8 +427,6 @@ footer {
   font-size: 12px;
   white-space: pre-wrap;
   word-break: break-word;
-  max-height: 200px;
-  overflow-y: auto;
 }
 
 .tool-call.error .tool-result {

@@ -250,10 +250,10 @@ function createStreamRenderer(assistantEl) {
 
   function startToolCall(index, callId, name) {
     ensureToolCallsContainer();
-    const pill = document.createElement("div");
+    const pill = document.createElement("details");
     pill.className = "tool-call running";
 
-    const header = document.createElement("div");
+    const header = document.createElement("summary");
     header.className = "tool-header";
     const icon = document.createElement("span");
     icon.className = "tool-icon";
