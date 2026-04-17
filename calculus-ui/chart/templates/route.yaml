@@ -2,13 +2,13 @@
 apiVersion: route.openshift.io/v1
 kind: Route
 metadata:
-  name: {{ include "ui-template.fullname" . }}
+  name: {{ include "calculus-ui.fullname" . }}
   labels:
-    {{- include "ui-template.labels" . | nindent 4 }}
+    {{- include "calculus-ui.labels" . | nindent 4 }}
 spec:
   to:
     kind: Service
-    name: {{ include "ui-template.fullname" . }}
+    name: {{ include "calculus-ui.fullname" . }}
     weight: 100
   port:
     targetPort: http

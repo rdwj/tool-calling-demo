@@ -1,18 +1,18 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ include "gateway-template.fullname" . }}
+  name: {{ include "calculus-gateway.fullname" . }}
   labels:
-    {{- include "gateway-template.labels" . | nindent 4 }}
+    {{- include "calculus-gateway.labels" . | nindent 4 }}
 spec:
   replicas: {{ .Values.replicaCount }}
   selector:
     matchLabels:
-      {{- include "gateway-template.selectorLabels" . | nindent 6 }}
+      {{- include "calculus-gateway.selectorLabels" . | nindent 6 }}
   template:
     metadata:
       labels:
-        {{- include "gateway-template.selectorLabels" . | nindent 8 }}
+        {{- include "calculus-gateway.selectorLabels" . | nindent 8 }}
     spec:
       containers:
         - name: gateway
@@ -24,7 +24,7 @@ spec:
               protocol: TCP
           envFrom:
             - configMapRef:
-                name: {{ include "gateway-template.fullname" . }}
+                name: {{ include "calculus-gateway.fullname" . }}
           livenessProbe:
             httpGet:
               path: /healthz

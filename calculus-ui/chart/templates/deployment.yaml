@@ -1,18 +1,18 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ include "ui-template.fullname" . }}
+  name: {{ include "calculus-ui.fullname" . }}
   labels:
-    {{- include "ui-template.labels" . | nindent 4 }}
+    {{- include "calculus-ui.labels" . | nindent 4 }}
 spec:
   replicas: {{ .Values.replicaCount }}
   selector:
     matchLabels:
-      {{- include "ui-template.selectorLabels" . | nindent 6 }}
+      {{- include "calculus-ui.selectorLabels" . | nindent 6 }}
   template:
     metadata:
       labels:
-        {{- include "ui-template.selectorLabels" . | nindent 8 }}
+        {{- include "calculus-ui.selectorLabels" . | nindent 8 }}
     spec:
       containers:
         - name: {{ .Chart.Name }}
@@ -24,7 +24,7 @@ spec:
               protocol: TCP
           envFrom:
             - configMapRef:
-                name: {{ include "ui-template.fullname" . }}
+                name: {{ include "calculus-ui.fullname" . }}
           livenessProbe:
             httpGet:
               path: /healthz
