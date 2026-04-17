@@ -37,20 +37,34 @@ function scrollToBottom() {
 }
 
 function renderContent(text) {
-  // Phase 0: Extract LaTeX blocks before HTML escaping so delimiters
-  // and backslash commands survive. Restored after all markdown
-  // processing; KaTeX auto-render picks them up in the DOM.
+  // Phase 0: Render LaTeX blocks directly to HTML via KaTeX.
+  // We do this before HTML escaping so the TeX source isn't mangled.
+  // The rendered HTML is stored as a placeholder and restored after
+  // all markdown processing.
   var latexBlocks = [];
   // Display math: \[...\]
-  text = text.replace(/\\\[([\s\S]*?)\\\]/g, function (m) {
+  text = text.replace(/\\\[([\s\S]*?)\\\]/g, function (_, tex) {
     var idx = latexBlocks.length;
-    latexBlocks.push(m);
+    var html;
+    try {
+      html = katex.renderToString(tex.trim(), { displayMode: true, throwOnError: false });
+      html = '<div class="katex-display-block">' + html + '</div>';
+    } catch (e) {
+      html = "\\[" + tex + "\\]";
+    }
+    latexBlocks.push(html);
     return "\x00LATEX" + idx + "\x00";
   });
   // Inline math: \(...\)
-  text = text.replace(/\\\(([\s\S]*?)\\\)/g, function (m) {
+  text = text.replace(/\\\(([\s\S]*?)\\\)/g, function (_, tex) {
     var idx = latexBlocks.length;
-    latexBlocks.push(m);
+    var html;
+    try {
+      html = katex.renderToString(tex.trim(), { displayMode: false, throwOnError: false });
+    } catch (e) {
+      html = "\\(" + tex + "\\)";
+    }
+    latexBlocks.push(html);
     return "\x00LATEX" + idx + "\x00";
   });
 
@@ -347,18 +361,8 @@ function createStreamRenderer(assistantEl) {
     if (thinkingPanel) {
       thinkingPanel.classList.add("done");
     }
-    // Render LaTeX math via KaTeX auto-render.
-    if (responseEl && typeof renderMathInElement === "function") {
-      renderMathInElement(responseEl, {
-        delimiters: [
-          { left: "\\[", right: "\\]", display: true },
-          { left: "\\(", right: "\\)", display: false },
-          { left: "$$", right: "$$", display: true },
-          { left: "$", right: "$", display: false },
-        ],
-        throwOnError: false,
-      });
-    }
+    // KaTeX math is rendered inline during renderContent() via
+    // katex.renderToString(). No post-pass needed.
     // If there was no response content (e.g. tool-only turn), make
     // that visible rather than leaving a blank message.
     if (!responseText.trim() && !toolCalls.size && !thinkingPanel) {

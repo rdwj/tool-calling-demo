@@ -439,14 +439,14 @@ footer {
   white-space: normal;
 }
 
-/* KaTeX math — shield from the parent's word-wrap/break-word which
-   destroys KaTeX's internal CSS positioning. */
-.response-content .katex-display {
+/* KaTeX math — rendered inline by katex.renderToString(). Shield from
+   the parent message's word-wrap: break-word which would break layout. */
+.katex-display-block {
+  display: block;
   margin: 12px 0;
   overflow-x: auto;
   overflow-y: hidden;
-  word-wrap: normal;
-  word-break: normal;
+  text-align: center;
 }
 
 .response-content .katex {
