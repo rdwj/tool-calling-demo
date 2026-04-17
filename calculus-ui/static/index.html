@@ -44,6 +44,35 @@
           <label for="param-max-tokens">Max Tokens</label>
           <input type="number" id="param-max-tokens" min="256" max="16384" step="256" value="4096">
         </div>
+        <div class="param-group">
+          <label for="param-top-p">Top P <span id="top-p-value"></span></label>
+          <input type="range" id="param-top-p" min="0" max="1" step="0.05" value="">
+        </div>
+        <div class="param-group">
+          <label for="param-top-k">Top K (0 = disabled)</label>
+          <input type="number" id="param-top-k" min="0" max="200" step="1" value="">
+        </div>
+        <div class="param-group">
+          <label for="param-freq-penalty">Frequency Penalty <span id="freq-penalty-value"></span></label>
+          <input type="range" id="param-freq-penalty" min="-2" max="2" step="0.1" value="0">
+        </div>
+        <div class="param-group">
+          <label for="param-presence-penalty">Presence Penalty <span id="presence-penalty-value"></span></label>
+          <input type="range" id="param-presence-penalty" min="-2" max="2" step="0.1" value="0">
+        </div>
+        <div class="param-group">
+          <label for="param-rep-penalty">Repetition Penalty <span id="rep-penalty-value"></span></label>
+          <input type="range" id="param-rep-penalty" min="0.5" max="2" step="0.05" value="1">
+        </div>
+        <div class="param-group">
+          <label for="param-reasoning">Reasoning Effort</label>
+          <select id="param-reasoning">
+            <option value="">Default</option>
+            <option value="low">Low</option>
+            <option value="medium">Medium</option>
+            <option value="high">High</option>
+          </select>
+        </div>
       </section>
       <section class="settings-section">
         <h3>System Prompt</h3>

@@ -377,6 +377,7 @@ class BaseAgent(abc.ABC):
         self,
         *,
         max_iterations: int = 10,
+        **kwargs: Any,
     ) -> AsyncIterator[StreamEvent]:
         """Streaming agent loop. Yields typed ``StreamEvent`` values.
 
@@ -400,6 +401,14 @@ class BaseAgent(abc.ABC):
         This is source-agnostic: tools from MCP servers and local
         ``@tool`` functions flow through the same dispatch point, so
         streaming looks identical regardless of tool origin.
+
+        Parameters
+        ----------
+        max_iterations:
+            Maximum number of model call rounds (tool-call loops).
+        **kwargs:
+            Extra keyword arguments (e.g. ``temperature``, ``top_p``)
+            forwarded to ``call_model_stream_raw`` on each model call.
         """
         self._require_llm()
 
@@ -435,7 +444,7 @@ class BaseAgent(abc.ABC):
                 self._reasoning_parser.reset()
 
             async for chunk in self.llm.call_model_stream_raw(
-                self.messages, tools=tools_arg
+                self.messages, tools=tools_arg, **kwargs
             ):
                 try:
                     choice = chunk.choices[0]

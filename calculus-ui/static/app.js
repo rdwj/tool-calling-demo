@@ -10,6 +10,12 @@ let streaming = false;
 let agentInfo = null;
 let userTemperature = null;  // null = use server default
 let userMaxTokens = null;
+let userTopP = null;
+let userTopK = null;
+let userFreqPenalty = null;
+let userPresencePenalty = null;
+let userRepPenalty = null;
+let userReasoningEffort = null;
 
 async function loadAgentInfo() {
   try {
@@ -56,6 +62,22 @@ function populateSettings() {
   if (maxTokensInput && agentInfo.model) {
     maxTokensInput.value = agentInfo.model.max_tokens;
   }
+
+  const topPSlider = document.getElementById("param-top-p");
+  const topPValue = document.getElementById("top-p-value");
+  if (topPSlider) { topPValue.textContent = ""; }
+
+  const freqSlider = document.getElementById("param-freq-penalty");
+  const freqValue = document.getElementById("freq-penalty-value");
+  if (freqSlider) { freqSlider.value = 0; freqValue.textContent = "0"; }
+
+  const presSlider = document.getElementById("param-presence-penalty");
+  const presValue = document.getElementById("presence-penalty-value");
+  if (presSlider) { presSlider.value = 0; presValue.textContent = "0"; }
+
+  const repSlider = document.getElementById("param-rep-penalty");
+  const repValue = document.getElementById("rep-penalty-value");
+  if (repSlider) { repSlider.value = 1; repValue.textContent = "1"; }
 
   // System prompt
   const promptEl = document.getElementById("system-prompt");
@@ -121,6 +143,64 @@ function setupSettings() {
   if (maxTokensInput) {
     maxTokensInput.addEventListener("change", function () {
       userMaxTokens = parseInt(this.value, 10) || null;
+    });
+  }
+
+  // Top P slider
+  const topPSlider = document.getElementById("param-top-p");
+  const topPValue = document.getElementById("top-p-value");
+  if (topPSlider) {
+    topPSlider.addEventListener("input", function () {
+      topPValue.textContent = this.value;
+      userTopP = parseFloat(this.value) || null;
+    });
+  }
+
+  // Top K
+  const topKInput = document.getElementById("param-top-k");
+  if (topKInput) {
+    topKInput.addEventListener("change", function () {
+      const v = parseInt(this.value, 10);
+      userTopK = (v > 0) ? v : null;
+    });
+  }
+
+  // Frequency penalty
+  const freqSlider = document.getElementById("param-freq-penalty");
+  const freqValue = document.getElementById("freq-penalty-value");
+  if (freqSlider) {
+    freqSlider.addEventListener("input", function () {
+      freqValue.textContent = this.value;
+      userFreqPenalty = parseFloat(this.value) || null;
+    });
+  }
+
+  // Presence penalty
+  const presSlider = document.getElementById("param-presence-penalty");
+  const presValue = document.getElementById("presence-penalty-value");
+  if (presSlider) {
+    presSlider.addEventListener("input", function () {
+      presValue.textContent = this.value;
+      userPresencePenalty = parseFloat(this.value) || null;
+    });
+  }
+
+  // Repetition penalty
+  const repSlider = document.getElementById("param-rep-penalty");
+  const repValue = document.getElementById("rep-penalty-value");
+  if (repSlider) {
+    repSlider.addEventListener("input", function () {
+      repValue.textContent = this.value;
+      const v = parseFloat(this.value);
+      userRepPenalty = (v !== 1.0) ? v : null;
+    });
+  }
+
+  // Reasoning effort
+  const reasoningSelect = document.getElementById("param-reasoning");
+  if (reasoningSelect) {
+    reasoningSelect.addEventListener("change", function () {
+      userReasoningEffort = this.value || null;
     });
   }
 }
@@ -347,6 +427,7 @@ function createStreamRenderer(assistantEl) {
   let responseText = "";
   let responseIndicator = null;
   let streamMetrics = null;     // server-sent metrics object
+  let rawChunks = [];
 
   // Per-tool state: index -> { pillEl, nameEl, statusEl, argsEl, resultEl, args, name, callId }
   const toolCalls = new Map();
@@ -519,6 +600,20 @@ function createStreamRenderer(assistantEl) {
     }
 
     assistantEl.appendChild(bar);
+
+    // Raw API response button
+    const rawBtn = document.createElement("button");
+    rawBtn.className = "raw-response-btn";
+    rawBtn.textContent = "{ }";
+    rawBtn.title = "View raw API response";
+    rawBtn.addEventListener("click", function () {
+      showRawResponse(rawChunks);
+    });
+    assistantEl.appendChild(rawBtn);
+  }
+
+  function pushRawChunk(chunk) {
+    rawChunks.push(chunk);
   }
 
   return {
@@ -557,7 +652,31 @@ function createStreamRenderer(assistantEl) {
     finalize,
     setMetrics,
     getResponseText: () => responseText,
+    pushRawChunk,
+    getRawChunks: () => rawChunks,
   };
+}
+
+function showRawResponse(chunks) {
+  let modal = document.getElementById("raw-response-modal");
+  if (!modal) {
+    modal = document.createElement("div");
+    modal.id = "raw-response-modal";
+    modal.className = "raw-modal";
+    modal.innerHTML = '<div class="raw-modal-content">' +
+      '<div class="raw-modal-header"><h3>Raw API Response</h3><button class="raw-modal-close">&times;</button></div>' +
+      '<pre class="raw-modal-body"></pre></div>';
+    document.body.appendChild(modal);
+    modal.querySelector(".raw-modal-close").addEventListener("click", function () {
+      modal.classList.remove("open");
+    });
+    modal.addEventListener("click", function (e) {
+      if (e.target === modal) modal.classList.remove("open");
+    });
+  }
+  const body = modal.querySelector(".raw-modal-body");
+  body.textContent = JSON.stringify(chunks, null, 2);
+  modal.classList.add("open");
 }
 
 async function sendMessage() {
@@ -585,6 +704,12 @@ async function sendMessage() {
     const reqBody = { messages: messages, stream: true };
     if (userTemperature !== null) reqBody.temperature = userTemperature;
     if (userMaxTokens !== null) reqBody.max_tokens = userMaxTokens;
+    if (userTopP !== null) reqBody.top_p = userTopP;
+    if (userTopK !== null) reqBody.top_k = userTopK;
+    if (userFreqPenalty !== null) reqBody.frequency_penalty = userFreqPenalty;
+    if (userPresencePenalty !== null) reqBody.presence_penalty = userPresencePenalty;
+    if (userRepPenalty !== null) reqBody.repetition_penalty = userRepPenalty;
+    if (userReasoningEffort !== null) reqBody.reasoning_effort = userReasoningEffort;
 
     const resp = await fetch("/v1/chat/completions", {
       method: "POST",
@@ -624,6 +749,8 @@ async function sendMessage() {
         } catch {
           continue; // skip malformed
         }
+
+        renderer.pushRawChunk(parsed);
 
         // Surface backend errors that arrive mid-stream.
         if (parsed.error) {
