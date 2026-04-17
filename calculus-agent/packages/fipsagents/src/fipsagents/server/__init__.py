@@ -206,15 +206,32 @@ class OpenAIChatServer:
         return {"status": "ready"}
 
     def _extract_overrides(self, req: ChatCompletionRequest) -> dict[str, Any]:
-        """Extract non-None sampling parameters from the request."""
+        """Extract non-None sampling parameters from the request.
+
+        Standard OpenAI params go as top-level kwargs to litellm.
+        vLLM-specific params (reasoning_effort, repetition_penalty, top_k)
+        go via ``extra_body`` so litellm forwards them without validation.
+        """
         overrides: dict[str, Any] = {}
-        for field in ("temperature", "max_tokens", "top_p", "top_k",
+        extra_body: dict[str, Any] = {}
+
+        # Standard OpenAI params — litellm knows these
+        for field in ("temperature", "max_tokens", "top_p",
                       "frequency_penalty", "presence_penalty",
-                      "repetition_penalty", "reasoning_effort",
                       "logprobs", "top_logprobs"):
             val = getattr(req, field, None)
             if val is not None:
                 overrides[field] = val
+
+        # vLLM-specific params — pass via extra_body to bypass litellm validation
+        for field in ("reasoning_effort", "repetition_penalty", "top_k"):
+            val = getattr(req, field, None)
+            if val is not None:
+                extra_body[field] = val
+
+        if extra_body:
+            overrides["extra_body"] = extra_body
+
         return overrides
 
     async def _chat_completions(self, req: ChatCompletionRequest):
