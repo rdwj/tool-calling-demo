@@ -611,6 +611,16 @@ function createStreamRenderer(assistantEl) {
       assistantEl.textContent = "(no response)";
     }
 
+    // Raw API response button — always shown
+    const rawBtn = document.createElement("button");
+    rawBtn.className = "raw-response-btn";
+    rawBtn.textContent = "View Raw Response";
+    rawBtn.title = "View full API response chunks";
+    rawBtn.addEventListener("click", function () {
+      showRawResponse(rawChunks);
+    });
+    assistantEl.appendChild(rawBtn);
+
     // Render metrics bar if we have data.
     const m = streamMetrics;
     if (!m) return;
@@ -641,16 +651,6 @@ function createStreamRenderer(assistantEl) {
     }
 
     assistantEl.appendChild(bar);
-
-    // Raw API response button
-    const rawBtn = document.createElement("button");
-    rawBtn.className = "raw-response-btn";
-    rawBtn.textContent = "View Raw Response";
-    rawBtn.title = "View full API response chunks";
-    rawBtn.addEventListener("click", function () {
-      showRawResponse(rawChunks);
-    });
-    assistantEl.appendChild(rawBtn);
   }
 
   function pushRawChunk(chunk) {
