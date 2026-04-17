@@ -55,9 +55,13 @@ browser avoids CORS and the agent stays behind an internal Service.
 frontend is vanilla JS with no build step. It renders:
 - **Thinking panel** — collapsible, shows the model's `reasoning_content`
 - **Tool call pills** — each tool invocation with name, arguments, status,
-  and result
+  and result (collapsible)
+- **LaTeX math** — rendered via KaTeX for proper typeset equations
 - **Stream metrics** — TTFT, thinking time, total time, token count, model
   calls, tool calls, and average inter-token latency
+- **Settings panel** — gear icon opens a slide-out panel showing model info,
+  system prompt, tool list with descriptions, and adjustable generation
+  parameters (temperature, max tokens)
 
 ## How it was built
 
@@ -136,6 +140,27 @@ ConfigMap):
 | `MODEL_NAME` | `openai/RedHatAI/gpt-oss-20b` | litellm model identifier |
 | `MCP_CALCULUS_URL` | calculus-helper MCP URL | MCP server for tools |
 | `OPENAI_API_KEY` | `not-required` | Required by litellm, any non-empty string works for unauthenticated endpoints |
+
+## API
+
+The agent exposes a `GET /v1/agent-info` endpoint (proxied through the
+gateway and UI) returning the model configuration, system prompt, and
+discovered tool list:
+
+```json
+{
+  "model": { "name": "openai/RedHatAI/gpt-oss-20b", "temperature": 0.3, "max_tokens": 4096 },
+  "system_prompt": "You are a Calculus Assistant...",
+  "tools": [
+    { "name": "differentiate", "description": "...", "parameters": {...} },
+    { "name": "integrate", "description": "...", "parameters": {...} }
+  ]
+}
+```
+
+The UI's settings panel uses this to display model info and tool
+descriptions. Temperature and max_tokens can be adjusted per-request via the
+panel controls.
 
 ## Related
 
