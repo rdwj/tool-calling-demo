@@ -10,12 +10,14 @@ the model's reasoning, tool invocations, and performance metrics.
 - **Native tool calling** — GPT-OSS-20B generates proper OpenAI-compatible
   `tool_calls` through vLLM, no framework-level tool injection needed.
 - **MCP integration** — The agent discovers tools at startup from a
-  [calculus-helper MCP server](https://mcp-server-calculus-helper-mcp.apps.cluster-n7pd5.n7pd5.sandbox5167.opentlc.com/mcp/)
-  via streamable-http transport.
+  calculus-helper MCP server via streamable-http transport.
 - **Observable AI** — The chat UI surfaces everything a reviewer needs to
   see: the model's thinking/reasoning, each tool call with arguments and
-  results, the final response, and live performance metrics (TTFT, total
-  time, token counts, inter-token latency).
+  results, the final response, live performance metrics, and the raw API
+  response for deep inspection.
+- **Tunable generation** — Temperature, top-p, top-k, penalties, reasoning
+  effort, and max tokens are all adjustable in the UI and forwarded
+  per-request to vLLM.
 
 ## Architecture
 
@@ -47,9 +49,10 @@ agent's `step()` method is a straightforward tool-calling loop: call the
 model, execute any tool calls, feed results back, repeat until done.
 
 **calculus-gateway** — A Go reverse proxy that speaks
-`/v1/chat/completions`. Handles SSE streaming with immediate flush, health
-checks, and request logging. Sits between the UI and the agent so the
-browser avoids CORS and the agent stays behind an internal Service.
+`/v1/chat/completions` and `/v1/agent-info`. Handles SSE streaming with
+immediate flush, health checks, and request logging. Sits between the UI
+and the agent so the browser avoids CORS and the agent stays behind an
+internal Service.
 
 **calculus-ui** — A minimal Go binary serving embedded static files. The
 frontend is vanilla JS with no build step. It renders:
@@ -59,33 +62,46 @@ frontend is vanilla JS with no build step. It renders:
 - **LaTeX math** — rendered via KaTeX for proper typeset equations
 - **Stream metrics** — TTFT, thinking time, total time, token count, model
   calls, tool calls, and average inter-token latency
-- **Settings panel** — gear icon opens a slide-out panel showing model info,
-  system prompt, tool list with descriptions, and adjustable generation
-  parameters (temperature, max tokens)
+- **Raw response viewer** — `{ }` button on each response opens a modal
+  with the complete SSE chunk stream for debugging and analysis
+- **Settings panel** — gear icon opens a slide-out panel with:
+  - Model info (name, defaults)
+  - System prompt (read-only)
+  - Tool list with descriptions and parameters (expandable)
+  - Generation parameters: temperature, max tokens, top-p, top-k,
+    frequency penalty, presence penalty, repetition penalty
+  - Reasoning effort control (low / medium / high)
 
 ## How it was built
 
-Each component was scaffolded from the
-[fips-agents](https://github.com/redhat-ai-americas/agent-template)
-templates using `fips-agents create`:
+Each component was scaffolded using the
+[fips-agents CLI](https://github.com/redhat-ai-americas/fips-agents-cli):
 
 ```bash
-fips-agents create agent calculus-agent
-fips-agents create gateway calculus-gateway
-fips-agents create ui calculus-ui
+fips-agents create agent calculus-agent --local --no-git -y
+fips-agents create gateway calculus-gateway --local --no-git -y
+fips-agents create ui calculus-ui --local --no-git -y
 ```
 
 The templates produce production-ready projects with Helm charts, Red Hat
 UBI Containerfiles, health probes, OpenShift BuildConfigs, and Makefiles.
-From there, customization was minimal:
+From there, customization was:
 
 - **Agent**: replaced the example research assistant with a ~30-line
   `CalculusAssistant`, pointed `agent.yaml` at GPT-OSS-20B and the
-  calculus MCP server, added a server entry point.
-- **Gateway**: changed `BACKEND_URL` in the Helm values to point at the
-  agent's Service.
-- **UI**: added stream metrics display (the backend already emits TTFT and
-  timing data), updated the title.
+  calculus MCP server, added an HTTP server entry point using
+  `OpenAIChatServer`, and added a `/v1/agent-info` endpoint.
+- **Gateway**: changed `BACKEND_URL` to the agent's Service, added a GET
+  proxy for `/v1/agent-info`.
+- **UI**: added KaTeX math rendering, stream metrics display, expandable
+  tool call and thinking panels, a settings panel with generation parameter
+  controls, and a raw API response viewer.
+
+Two scaffolding bugs were found and filed
+([rdwj/fips-agents-cli#8](https://github.com/rdwj/fips-agents-cli/issues/8),
+[rdwj/fips-agents-cli#9](https://github.com/rdwj/fips-agents-cli/issues/9)):
+Go import paths and Helm template helpers weren't updated during `create`.
+See `CLI_AUDIT.md` for the full audit.
 
 The long-term goal is for `fips-agents create` to handle more of this
 wiring automatically — asking for the model endpoint, MCP server URLs, and
@@ -141,11 +157,25 @@ ConfigMap):
 | `MCP_CALCULUS_URL` | calculus-helper MCP URL | MCP server for tools |
 | `OPENAI_API_KEY` | `not-required` | Required by litellm, any non-empty string works for unauthenticated endpoints |
 
+### Per-request parameters
+
+These can be adjusted in the UI settings panel and are sent per-request:
+
+| Parameter | Range | Default | Notes |
+|---|---|---|---|
+| `temperature` | 0.0–2.0 | 0.3 | Controls randomness |
+| `max_tokens` | 256–16384 | 4096 | Maximum response length |
+| `top_p` | 0.0–1.0 | — | Nucleus sampling |
+| `top_k` | 0–200 | — | Top-k sampling (0 = disabled) |
+| `frequency_penalty` | -2.0–2.0 | 0 | Penalize repeated tokens by frequency |
+| `presence_penalty` | -2.0–2.0 | 0 | Penalize tokens that have appeared |
+| `repetition_penalty` | 0.5–2.0 | 1.0 | vLLM repetition penalty |
+| `reasoning_effort` | low/medium/high | — | Controls thinking budget |
+
 ## API
 
-The agent exposes a `GET /v1/agent-info` endpoint (proxied through the
-gateway and UI) returning the model configuration, system prompt, and
-discovered tool list:
+**`GET /v1/agent-info`** — Returns model configuration, system prompt, and
+discovered tool list (proxied through gateway and UI):
 
 ```json
 {
@@ -158,12 +188,14 @@ discovered tool list:
 }
 ```
 
-The UI's settings panel uses this to display model info and tool
-descriptions. Temperature and max_tokens can be adjusted per-request via the
-panel controls.
+**`POST /v1/chat/completions`** — Standard OpenAI-compatible chat endpoint.
+Accepts all sampling parameters listed above. Supports both sync JSON and
+SSE streaming responses. Streaming responses include a final usage chunk
+with `stream_metrics` (TTFT, inter-token latency, etc.).
 
 ## Related
 
 - [rdwj/tool-calling-demo#1](https://github.com/rdwj/tool-calling-demo/issues/1) — Try routing through LlamaStack instead of direct vLLM
 - [agent-template](https://github.com/redhat-ai-americas/agent-template) — The BaseAgent framework and templates
 - [fips-agents CLI](https://github.com/redhat-ai-americas/fips-agents-cli) — Scaffolding tool for the templates
+- [CLI_AUDIT.md](CLI_AUDIT.md) — Audit of fips-agents CLI gaps found during this build
