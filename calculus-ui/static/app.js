@@ -633,8 +633,8 @@ function createStreamRenderer(assistantEl) {
     // Raw API response button
     const rawBtn = document.createElement("button");
     rawBtn.className = "raw-response-btn";
-    rawBtn.textContent = "{ }";
-    rawBtn.title = "View raw API response";
+    rawBtn.textContent = "View Raw Response";
+    rawBtn.title = "View full API response chunks";
     rawBtn.addEventListener("click", function () {
       showRawResponse(rawChunks);
     });
