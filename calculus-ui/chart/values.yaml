@@ -1,0 +1,26 @@
+replicaCount: 1
+
+image:
+  repository: calculus-ui
+  tag: latest
+  pullPolicy: IfNotPresent
+
+resources:
+  requests:
+    cpu: 50m
+    memory: 32Mi
+  limits:
+    cpu: 100m
+    memory: 64Mi
+
+config:
+  API_URL: http://calculus-gateway:8080
+
+service:
+  port: 3000
+
+route:
+  enabled: true
+  tls:
+    termination: edge
+    insecureEdgeTerminationPolicy: Redirect

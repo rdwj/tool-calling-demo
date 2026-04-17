@@ -1,0 +1,15 @@
+{
+  "generator": {
+    "tool": "fips-agents-cli",
+    "version": "0.5.1"
+  },
+  "template": {
+    "url": "https://github.com/redhat-ai-americas/ui-template",
+    "commit": "98c90686e838",
+    "full_commit": "98c90686e8387c9c48fb330f97f4a3ca2c9074b5"
+  },
+  "project": {
+    "name": "calculus-ui",
+    "created_at": "2026-04-17T20:12:40.756658+00:00"
+  }
+}

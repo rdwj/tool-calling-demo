@@ -1,0 +1,15 @@
+{
+  "generator": {
+    "tool": "fips-agents-cli",
+    "version": "0.5.1"
+  },
+  "template": {
+    "url": "https://github.com/redhat-ai-americas/gateway-template",
+    "commit": "cc36289aa602",
+    "full_commit": "cc36289aa602b5bf42e1c94d851678d353ea6a1c"
+  },
+  "project": {
+    "name": "calculus-gateway",
+    "created_at": "2026-04-17T20:12:39.892187+00:00"
+  }
+}

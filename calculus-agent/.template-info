@@ -1,0 +1,15 @@
+{
+  "generator": {
+    "tool": "fips-agents-cli",
+    "version": "0.5.1"
+  },
+  "template": {
+    "url": "https://github.com/redhat-ai-americas/agent-template",
+    "commit": "cd6e4b4d0beb",
+    "full_commit": "cd6e4b4d0bebb56c02e1694ad4a9ae69bc965c96"
+  },
+  "project": {
+    "name": "calculus-agent",
+    "created_at": "2026-04-17T20:12:38.896569+00:00"
+  }
+}
