@@ -6,13 +6,133 @@
 let messages = [];
 let streaming = false;
 
+// -- Settings panel state ---------------------------------------------------
+let agentInfo = null;
+let userTemperature = null;  // null = use server default
+let userMaxTokens = null;
+
+async function loadAgentInfo() {
+  try {
+    const resp = await fetch("/v1/agent-info");
+    if (!resp.ok) return;
+    agentInfo = await resp.json();
+    populateSettings();
+  } catch (e) {
+    console.warn("Could not load agent info:", e);
+  }
+}
+
+function populateSettings() {
+  if (!agentInfo) return;
+
+  // Model name in header subtitle
+  const modelNameEl = document.getElementById("model-name");
+  if (modelNameEl && agentInfo.model) {
+    // Show just the model's short name, e.g. "gpt-oss-20b" from "openai/RedHatAI/gpt-oss-20b"
+    const parts = agentInfo.model.name.split("/");
+    modelNameEl.textContent = parts[parts.length - 1];
+  }
+
+  // Model info section
+  const modelInfoEl = document.getElementById("model-info");
+  if (modelInfoEl && agentInfo.model) {
+    modelInfoEl.innerHTML =
+      '<div class="info-row"><span class="info-label">Name</span><span class="info-value">' +
+      agentInfo.model.name.split("/").pop() + '</span></div>' +
+      '<div class="info-row"><span class="info-label">Default Temperature</span><span class="info-value">' +
+      agentInfo.model.temperature + '</span></div>' +
+      '<div class="info-row"><span class="info-label">Default Max Tokens</span><span class="info-value">' +
+      agentInfo.model.max_tokens + '</span></div>';
+  }
+
+  // Set parameter controls to defaults
+  const tempSlider = document.getElementById("param-temperature");
+  const tempValue = document.getElementById("temp-value");
+  const maxTokensInput = document.getElementById("param-max-tokens");
+  if (tempSlider && agentInfo.model) {
+    tempSlider.value = agentInfo.model.temperature;
+    tempValue.textContent = agentInfo.model.temperature;
+  }
+  if (maxTokensInput && agentInfo.model) {
+    maxTokensInput.value = agentInfo.model.max_tokens;
+  }
+
+  // System prompt
+  const promptEl = document.getElementById("system-prompt");
+  if (promptEl) {
+    promptEl.textContent = agentInfo.system_prompt || "(none)";
+  }
+
+  // Tools list
+  const toolsListEl = document.getElementById("tools-list");
+  const toolsCountEl = document.getElementById("tools-count");
+  if (toolsListEl && agentInfo.tools) {
+    toolsCountEl.textContent = "(" + agentInfo.tools.length + ")";
+    toolsListEl.innerHTML = "";
+    for (const tool of agentInfo.tools) {
+      const details = document.createElement("details");
+      details.className = "tool-info";
+      const summary = document.createElement("summary");
+      summary.textContent = tool.name;
+      details.appendChild(summary);
+      const desc = document.createElement("p");
+      desc.className = "tool-description";
+      desc.textContent = tool.description;
+      details.appendChild(desc);
+      if (tool.parameters && tool.parameters.properties) {
+        const params = document.createElement("div");
+        params.className = "tool-params";
+        const keys = Object.keys(tool.parameters.properties);
+        params.textContent = "Parameters: " + keys.join(", ");
+        details.appendChild(params);
+      }
+      toolsListEl.appendChild(details);
+    }
+  }
+}
+
+function setupSettings() {
+  const btn = document.getElementById("settings-btn");
+  const panel = document.getElementById("settings-panel");
+  const overlay = document.getElementById("settings-overlay");
+  const closeBtn = document.getElementById("settings-close");
+
+  function toggle() {
+    const open = panel.classList.toggle("open");
+    overlay.classList.toggle("open", open);
+  }
+
+  if (btn) btn.addEventListener("click", toggle);
+  if (closeBtn) closeBtn.addEventListener("click", toggle);
+  if (overlay) overlay.addEventListener("click", toggle);
+
+  // Temperature slider
+  const tempSlider = document.getElementById("param-temperature");
+  const tempValue = document.getElementById("temp-value");
+  if (tempSlider) {
+    tempSlider.addEventListener("input", function () {
+      tempValue.textContent = this.value;
+      userTemperature = parseFloat(this.value);
+    });
+  }
+
+  // Max tokens input
+  const maxTokensInput = document.getElementById("param-max-tokens");
+  if (maxTokensInput) {
+    maxTokensInput.addEventListener("change", function () {
+      userMaxTokens = parseInt(this.value, 10) || null;
+    });
+  }
+}
+
 const messagesEl = document.getElementById("messages");
 const inputEl = document.getElementById("input");
 const sendBtn = document.getElementById("send-btn");
 const chatEl = document.getElementById("chat");
 
 async function init() {
-  // Server proxies /v1/* to the backend — no config discovery needed
+  setupSettings();
+  loadAgentInfo();
 }
 
 function appendMessage(role, content) {
@@ -462,13 +582,14 @@ async function sendMessage() {
   setStreaming(true);
 
   try {
+    const reqBody = { messages: messages, stream: true };
+    if (userTemperature !== null) reqBody.temperature = userTemperature;
+    if (userMaxTokens !== null) reqBody.max_tokens = userMaxTokens;
+
     const resp = await fetch("/v1/chat/completions", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        messages: messages,
-        stream: true,
-      }),
+      body: JSON.stringify(reqBody),
     });
 
     if (!resp.ok) {
