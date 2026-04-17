@@ -439,14 +439,21 @@ footer {
   white-space: normal;
 }
 
-/* KaTeX display math — centered with vertical breathing room. */
+/* KaTeX math — shield from the parent's word-wrap/break-word which
+   destroys KaTeX's internal CSS positioning. */
 .response-content .katex-display {
   margin: 12px 0;
   overflow-x: auto;
+  overflow-y: hidden;
+  word-wrap: normal;
+  word-break: normal;
 }
 
 .response-content .katex {
   font-size: 1.1em;
+  word-wrap: normal;
+  word-break: normal;
+  white-space: nowrap;
 }
 
 .response-content:empty + .streaming-indicator {
