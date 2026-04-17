@@ -17,6 +17,7 @@ let userPresencePenalty = null;
 let userRepPenalty = null;
 let userReasoningEffort = null;
 let userApiBase = null;  // null = use default (direct vLLM)
+let userResponsesApi = false;
 
 async function loadAgentInfo() {
   try {
@@ -229,7 +230,18 @@ function setupSettings() {
       } else {
         userApiBase = null;
         responsesGroup.style.display = "none";
+        // Uncheck Responses API when switching away from LlamaStack
+        const cb = document.getElementById("param-responses-api");
+        if (cb) { cb.checked = false; userResponsesApi = false; }
       }
+    });
+  }
+
+  // Responses API checkbox
+  const responsesCheckbox = document.getElementById("param-responses-api");
+  if (responsesCheckbox) {
+    responsesCheckbox.addEventListener("change", function () {
+      userResponsesApi = this.checked;
     });
   }
 }
@@ -740,6 +752,7 @@ async function sendMessage() {
     if (userRepPenalty !== null) reqBody.repetition_penalty = userRepPenalty;
     if (userReasoningEffort !== null) reqBody.reasoning_effort = userReasoningEffort;
     if (userApiBase !== null) reqBody.api_base = userApiBase;
+    if (userResponsesApi) reqBody.use_responses_api = true;
 
     const resp = await fetch("/v1/chat/completions", {
       method: "POST",

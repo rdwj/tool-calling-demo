@@ -67,6 +67,7 @@ class ChatCompletionRequest(BaseModel):
     logprobs: bool | None = None
     top_logprobs: int | None = None
     api_base: str | None = None
+    use_responses_api: bool = False
 
 
 # ---------------------------------------------------------------------------
@@ -164,6 +165,7 @@ class OpenAIChatServer:
 
         self._agent: BaseAgent | None = None
         self._agent_lock = asyncio.Lock()
+        self.responses_api_handler = None  # optional async generator callback
 
         app_title = title if title is not None else agent_class.__name__
         self.app = FastAPI(
@@ -243,6 +245,19 @@ class OpenAIChatServer:
         model_name = req.model or agent.config.model.name
         incoming = _messages_to_dicts(req.messages)
         overrides = self._extract_overrides(req)
+
+        # Responses API mode: bypass normal litellm flow and proxy to
+        # an external endpoint (e.g. LlamaStack /v1/responses).
+        if req.use_responses_api and self.responses_api_handler is not None:
+            return StreamingResponse(
+                self.responses_api_handler(agent, incoming, model_name, overrides),
+                media_type="text/event-stream",
+                headers={
+                    "Cache-Control": "no-cache",
+                    "Connection": "keep-alive",
+                    "X-Accel-Buffering": "no",
+                },
+            )
 
         if not req.stream:
             content, metrics, finish_reason = await self._collect_sync(
