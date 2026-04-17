@@ -23,8 +23,10 @@ WORKDIR /opt/app-root/src
 # source files used at runtime come from the COPY in the runtime stage.
 COPY pyproject.toml .
 COPY src/          src/
+COPY packages/     packages/
 USER 0
 RUN pip install --no-cache-dir --upgrade pip \
+    && pip install --no-cache-dir ./packages/fipsagents[server] \
     && pip install --no-cache-dir .
 
 # ---------------------------------------------------------------------------
