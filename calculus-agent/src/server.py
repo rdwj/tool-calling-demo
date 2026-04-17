@@ -40,6 +40,17 @@ async def agent_info():
             "temperature": agent.config.model.temperature,
             "max_tokens": agent.config.model.max_tokens,
         },
+        "backends": {
+            "direct": {
+                "label": "Direct (vLLM)",
+                "api_base": None,  # use default from agent.yaml
+            },
+            "llamastack": {
+                "label": "LlamaStack",
+                "api_base": "http://llama-stack-service.llamastack.svc.cluster.local:8321/v1",
+                "responses_api": False,  # not available on this deployment
+            },
+        },
         "system_prompt": system_prompt,
         "tools": tools,
     }

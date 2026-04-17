@@ -66,6 +66,7 @@ class ChatCompletionRequest(BaseModel):
     reasoning_effort: str | None = None
     logprobs: bool | None = None
     top_logprobs: int | None = None
+    api_base: str | None = None
 
 
 # ---------------------------------------------------------------------------
@@ -218,7 +219,7 @@ class OpenAIChatServer:
         # Standard OpenAI params — litellm knows these
         for field in ("temperature", "max_tokens", "top_p",
                       "frequency_penalty", "presence_penalty",
-                      "logprobs", "top_logprobs"):
+                      "logprobs", "top_logprobs", "api_base"):
             val = getattr(req, field, None)
             if val is not None:
                 overrides[field] = val

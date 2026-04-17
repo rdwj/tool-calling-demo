@@ -35,6 +35,23 @@
         <div id="model-info" class="model-info"></div>
       </section>
       <section class="settings-section">
+        <h3>Backend</h3>
+        <div class="param-group">
+          <label for="param-backend">Inference Path</label>
+          <select id="param-backend">
+            <option value="direct">Direct (vLLM)</option>
+            <option value="llamastack">LlamaStack</option>
+          </select>
+        </div>
+        <div class="param-group" id="responses-api-group" style="display:none">
+          <label>
+            <input type="checkbox" id="param-responses-api" disabled>
+            Responses API
+            <span class="param-hint">(not available on this deployment)</span>
+          </label>
+        </div>
+      </section>
+      <section class="settings-section">
         <h3>Parameters</h3>
         <div class="param-group">
           <label for="param-temperature">Temperature <span id="temp-value">0.3</span></label>

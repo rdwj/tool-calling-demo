@@ -16,6 +16,7 @@ let userFreqPenalty = null;
 let userPresencePenalty = null;
 let userRepPenalty = null;
 let userReasoningEffort = null;
+let userApiBase = null;  // null = use default (direct vLLM)
 
 async function loadAgentInfo() {
   try {
@@ -78,6 +79,18 @@ function populateSettings() {
   const repSlider = document.getElementById("param-rep-penalty");
   const repValue = document.getElementById("rep-penalty-value");
   if (repSlider) { repSlider.value = 1; repValue.textContent = "1"; }
+
+  // Backend selector
+  const backendSelect = document.getElementById("param-backend");
+  const responsesGroup = document.getElementById("responses-api-group");
+  const responsesCheckbox = document.getElementById("param-responses-api");
+  if (backendSelect && agentInfo.backends) {
+    // Show/hide Responses API option based on LlamaStack availability
+    if (agentInfo.backends.llamastack && agentInfo.backends.llamastack.responses_api) {
+      responsesCheckbox.disabled = false;
+      responsesGroup.querySelector(".param-hint").textContent = "";
+    }
+  }
 
   // System prompt
   const promptEl = document.getElementById("system-prompt");
@@ -201,6 +214,22 @@ function setupSettings() {
   if (reasoningSelect) {
     reasoningSelect.addEventListener("change", function () {
       userReasoningEffort = this.value || null;
+    });
+  }
+
+  // Backend selector
+  const backendSelect = document.getElementById("param-backend");
+  const responsesGroup = document.getElementById("responses-api-group");
+  if (backendSelect) {
+    backendSelect.addEventListener("change", function () {
+      const val = this.value;
+      if (val === "llamastack" && agentInfo && agentInfo.backends && agentInfo.backends.llamastack) {
+        userApiBase = agentInfo.backends.llamastack.api_base;
+        responsesGroup.style.display = "block";
+      } else {
+        userApiBase = null;
+        responsesGroup.style.display = "none";
+      }
     });
   }
 }
@@ -710,6 +739,7 @@ async function sendMessage() {
     if (userPresencePenalty !== null) reqBody.presence_penalty = userPresencePenalty;
     if (userRepPenalty !== null) reqBody.repetition_penalty = userRepPenalty;
     if (userReasoningEffort !== null) reqBody.reasoning_effort = userReasoningEffort;
+    if (userApiBase !== null) reqBody.api_base = userApiBase;
 
     const resp = await fetch("/v1/chat/completions", {
       method: "POST",

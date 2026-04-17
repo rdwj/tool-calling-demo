@@ -813,3 +813,15 @@ footer {
   word-break: break-word;
   margin: 0;
 }
+
+.param-hint {
+  font-size: 11px;
+  color: var(--color-text-dim);
+  font-weight: 400;
+  margin-left: 4px;
+}
+
+.param-group label input[type="checkbox"] {
+  margin-right: 6px;
+  vertical-align: middle;
+}
