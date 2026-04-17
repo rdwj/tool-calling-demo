@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/redhat-ai-americas/gateway-template/internal/handler"
+	"github.com/redhat-ai-americas/calculus-gateway/internal/handler"
 )
 
 // sampleCompletion is a minimal OpenAI-compatible chat completion response.

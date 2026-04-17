@@ -10,9 +10,9 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/redhat-ai-americas/gateway-template/internal/config"
-	"github.com/redhat-ai-americas/gateway-template/internal/handler"
-	"github.com/redhat-ai-americas/gateway-template/internal/middleware"
+	"github.com/redhat-ai-americas/calculus-gateway/internal/config"
+	"github.com/redhat-ai-americas/calculus-gateway/internal/handler"
+	"github.com/redhat-ai-americas/calculus-gateway/internal/middleware"
 )
 
 func main() {

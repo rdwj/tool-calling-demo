@@ -11,7 +11,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/redhat-ai-americas/ui-template/static"
+	"github.com/redhat-ai-americas/calculus-ui/static"
 )
 
 // buildMux creates the same ServeMux as main(), wired to the given backend URL

@@ -9,7 +9,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/redhat-ai-americas/gateway-template/internal/middleware"
+	"github.com/redhat-ai-americas/calculus-gateway/internal/middleware"
 )
 
 // restoreDefaultLogger resets slog to a safe default that writes to stderr.

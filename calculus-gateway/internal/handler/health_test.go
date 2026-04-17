@@ -6,7 +6,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/redhat-ai-americas/gateway-template/internal/handler"
+	"github.com/redhat-ai-americas/calculus-gateway/internal/handler"
 )
 
 func TestHealthHandler(t *testing.T) {

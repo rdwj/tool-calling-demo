@@ -12,7 +12,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/redhat-ai-americas/ui-template/static"
+	"github.com/redhat-ai-americas/calculus-ui/static"
 )
 
 func main() {
